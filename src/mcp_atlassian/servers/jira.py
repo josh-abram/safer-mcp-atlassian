@@ -994,6 +994,13 @@ async def add_comment(
     ctx: Context,
     issue_key: Annotated[str, Field(description="Jira issue key (e.g., 'PROJ-123')")],
     comment: Annotated[str, Field(description="Comment text in Markdown format")],
+    visibility: Annotated[
+        str | None,
+        Field(
+            description="(Optional) Comment visibility: 'public' (default) or 'internal'. Internal comments are only visible to agents and internal users.",
+            default=None,
+        ),
+    ] = None,
 ) -> str:
     """Add a comment to a Jira issue.
 
@@ -1001,6 +1008,7 @@ async def add_comment(
         ctx: The FastMCP context.
         issue_key: Jira issue key.
         comment: Comment text in Markdown.
+        visibility: Comment visibility ('public' or 'internal').
 
     Returns:
         JSON string representing the added comment object.
@@ -1010,7 +1018,7 @@ async def add_comment(
     """
     jira = await get_jira_fetcher(ctx)
     # add_comment returns dict
-    result = jira.add_comment(issue_key, comment)
+    result = jira.add_comment(issue_key, comment, visibility=visibility)
     return json.dumps(result, indent=2, ensure_ascii=False)
 
 

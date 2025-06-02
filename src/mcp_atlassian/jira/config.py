@@ -30,6 +30,7 @@ class JiraConfig:
     https_proxy: str | None = None  # HTTPS proxy URL
     no_proxy: str | None = None  # Comma-separated list of hosts to bypass proxy
     socks_proxy: str | None = None  # SOCKS proxy URL (optional)
+    force_internal_comments: bool = False  # Whether to force all comments to be internal
 
     @property
     def is_cloud(self) -> bool:
@@ -109,6 +110,10 @@ class JiraConfig:
         no_proxy = os.getenv("JIRA_NO_PROXY", os.getenv("NO_PROXY"))
         socks_proxy = os.getenv("JIRA_SOCKS_PROXY", os.getenv("SOCKS_PROXY"))
 
+        # Force internal comments setting
+        force_internal_comments_env = os.getenv("JIRA_FORCE_INTERNAL_COMMENTS", "false").lower()
+        force_internal_comments = force_internal_comments_env in ("true", "1", "yes")
+
         return cls(
             url=url,
             auth_type=auth_type,
@@ -122,6 +127,7 @@ class JiraConfig:
             https_proxy=https_proxy,
             no_proxy=no_proxy,
             socks_proxy=socks_proxy,
+            force_internal_comments=force_internal_comments,
         )
 
     def is_auth_configured(self) -> bool:

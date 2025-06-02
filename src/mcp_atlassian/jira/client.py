@@ -165,6 +165,45 @@ class JiraClient:
         _ = self.config.url if hasattr(self, "config") else ""
         return self.preprocessor.markdown_to_jira(markdown_text)
 
+    def _add_internal_comment_properties(self, comment_data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Add internal comment properties to comment data if force_internal_comments is enabled.
+
+        Args:
+            comment_data: The comment data dictionary
+
+        Returns:
+            Updated comment data with internal properties if needed
+        """
+        if not self.config.force_internal_comments:
+            return comment_data
+
+        # Add properties to make the comment internal
+        if "properties" not in comment_data:
+            comment_data["properties"] = []
+
+        # Add the internal comment property
+        internal_property = {
+            "key": "sd.public.comment",
+            "value": {"internal": True}
+        }
+
+        # Check if the property already exists
+        existing_property = None
+        for prop in comment_data["properties"]:
+            if prop.get("key") == "sd.public.comment":
+                existing_property = prop
+                break
+
+        if existing_property:
+            # Update existing property
+            existing_property["value"] = {"internal": True}
+        else:
+            # Add new property
+            comment_data["properties"].append(internal_property)
+
+        return comment_data
+
     def get_paged(
         self,
         method: Literal["get", "post"],

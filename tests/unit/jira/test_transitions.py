@@ -388,3 +388,54 @@ class TestTransitionsMixin:
             transition_data["update"]["comment"][0]["add"]["body"]
             == "Converted comment"
         )
+
+    def test_add_comment_to_transition_data_with_force_internal_comments_enabled(
+        self, transitions_mixin: TransitionsMixin
+    ):
+        """Test _add_comment_to_transition_data with force_internal_comments enabled."""
+        # Enable force_internal_comments
+        transitions_mixin.config.force_internal_comments = True
+        
+        # Prepare transition data
+        transition_data = {"transition": {"id": "10"}}
+
+        # Call the method
+        transitions_mixin._add_comment_to_transition_data(
+            transition_data, "Test internal comment"
+        )
+
+        # Verify that internal properties were added
+        assert "update" in transition_data
+        assert "comment" in transition_data["update"]
+        assert len(transition_data["update"]["comment"]) == 1
+        
+        comment_obj = transition_data["update"]["comment"][0]["add"]
+        assert comment_obj["body"] == "Test internal comment"
+        assert "properties" in comment_obj
+        assert len(comment_obj["properties"]) == 1
+        assert comment_obj["properties"][0]["key"] == "sd.public.comment"
+        assert comment_obj["properties"][0]["value"]["internal"] is True
+
+    def test_add_comment_to_transition_data_with_force_internal_comments_disabled(
+        self, transitions_mixin: TransitionsMixin
+    ):
+        """Test _add_comment_to_transition_data with force_internal_comments disabled."""
+        # Ensure force_internal_comments is disabled
+        transitions_mixin.config.force_internal_comments = False
+        
+        # Prepare transition data
+        transition_data = {"transition": {"id": "10"}}
+
+        # Call the method
+        transitions_mixin._add_comment_to_transition_data(
+            transition_data, "Test public comment"
+        )
+
+        # Verify that no internal properties were added
+        assert "update" in transition_data
+        assert "comment" in transition_data["update"]
+        assert len(transition_data["update"]["comment"]) == 1
+        
+        comment_obj = transition_data["update"]["comment"][0]["add"]
+        assert comment_obj["body"] == "Test public comment"
+        assert "properties" not in comment_obj
