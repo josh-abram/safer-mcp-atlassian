@@ -330,9 +330,21 @@ Description:
         # Convert markdown to Jira format
         jira_formatted_comment = self.markdown_to_jira(comment)
 
+        # Create the comment object
+        comment_obj = {"body": jira_formatted_comment}
+
+        # Add internal comment properties if force_internal_comments is enabled
+        if self.config.force_internal_comments:
+            comment_obj["properties"] = [
+                {
+                    "key": "sd.public.comment",
+                    "value": {"internal": True}
+                }
+            ]
+
         # Add the comment to the transition data
         transition_data["update"] = {
-            "comment": [{"add": {"body": jira_formatted_comment}}]
+            "comment": [{"add": comment_obj}]
         }
 
         return transition_data

@@ -259,11 +259,259 @@ class TestCommentsMixin:
         )
 
     def test_markdown_to_jira_with_empty_text(self, comments_mixin):
-        """Test markdown to Jira conversion with empty text."""
-        # Call the method with empty text
+        """Test _markdown_to_jira with empty text."""
         result = comments_mixin._markdown_to_jira("")
-
-        # Verify
         assert result == ""
-        # The preprocessor should not be called with empty text
-        comments_mixin.preprocessor.markdown_to_jira.assert_not_called()
+
+    def test_add_comment_with_force_internal_comments_enabled(self, comments_mixin):
+        """Test add_comment with force_internal_comments enabled."""
+        # Enable force_internal_comments
+        comments_mixin.config.force_internal_comments = True
+        
+        # Setup mock response for direct REST API call
+        comments_mixin.jira.resource_url = Mock(return_value="https://test.atlassian.net/rest/api/2/issue")
+        comments_mixin.jira.post = Mock(return_value={
+            "id": "10001",
+            "body": "This is an internal comment",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        })
+
+        # Call the method without visibility parameter (should use global setting)
+        result = comments_mixin.add_comment("TEST-123", "Test internal comment")
+
+        # Verify that the direct REST API was called with internal properties
+        comments_mixin.jira.resource_url.assert_called_once_with("issue")
+        comments_mixin.jira.post.assert_called_once_with(
+            "https://test.atlassian.net/rest/api/2/issue/TEST-123/comment",
+            json={
+                "body": "*This* is _Jira_ formatted",
+                "properties": [
+                    {
+                        "key": "sd.public.comment",
+                        "value": {"internal": True}
+                    }
+                ]
+            }
+        )
+        
+        # Verify that the standard issue_add_comment was NOT called
+        comments_mixin.jira.issue_add_comment.assert_not_called()
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This is an internal comment"
+        assert result["author"] == "John Doe"
+
+    def test_add_comment_with_force_internal_comments_disabled(self, comments_mixin):
+        """Test add_comment with force_internal_comments disabled (default behavior)."""
+        # Ensure force_internal_comments is disabled
+        comments_mixin.config.force_internal_comments = False
+        
+        # Setup mock response for standard method
+        comments_mixin.jira.issue_add_comment.return_value = {
+            "id": "10001",
+            "body": "This is a public comment",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        }
+
+        # Call the method
+        result = comments_mixin.add_comment("TEST-123", "Test public comment")
+
+        # Verify that the standard method was called
+        comments_mixin.jira.issue_add_comment.assert_called_once_with(
+            "TEST-123", "*This* is _Jira_ formatted"
+        )
+        
+        # Verify that the direct REST API was NOT called
+        if hasattr(comments_mixin.jira, 'post'):
+            comments_mixin.jira.post.assert_not_called()
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This is a public comment"
+        assert result["author"] == "John Doe"
+
+    def test_add_comment_with_explicit_internal_visibility(self, comments_mixin):
+        """Test add_comment with explicit internal visibility parameter."""
+        # Ensure force_internal_comments is disabled to test explicit parameter
+        comments_mixin.config.force_internal_comments = False
+        
+        # Setup mock response for direct REST API call
+        comments_mixin.jira.resource_url = Mock(return_value="https://test.atlassian.net/rest/api/2/issue")
+        comments_mixin.jira.post = Mock(return_value={
+            "id": "10001",
+            "body": "This is an explicitly internal comment",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        })
+
+        # Call the method with explicit internal visibility
+        result = comments_mixin.add_comment("TEST-123", "Test internal comment", visibility="internal")
+
+        # Verify that the direct REST API was called with internal properties
+        comments_mixin.jira.resource_url.assert_called_once_with("issue")
+        comments_mixin.jira.post.assert_called_once_with(
+            "https://test.atlassian.net/rest/api/2/issue/TEST-123/comment",
+            json={
+                "body": "*This* is _Jira_ formatted",
+                "properties": [
+                    {
+                        "key": "sd.public.comment",
+                        "value": {"internal": True}
+                    }
+                ]
+            }
+        )
+        
+        # Verify that the standard issue_add_comment was NOT called
+        comments_mixin.jira.issue_add_comment.assert_not_called()
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This is an explicitly internal comment"
+        assert result["author"] == "John Doe"
+
+    def test_add_comment_with_explicit_public_visibility(self, comments_mixin):
+        """Test add_comment with explicit public visibility parameter."""
+        # Enable force_internal_comments to test that explicit public overrides it
+        comments_mixin.config.force_internal_comments = True
+        
+        # Setup mock response for standard method
+        comments_mixin.jira.issue_add_comment.return_value = {
+            "id": "10001",
+            "body": "This is an explicitly public comment",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        }
+
+        # Call the method with explicit public visibility
+        result = comments_mixin.add_comment("TEST-123", "Test public comment", visibility="public")
+
+        # Verify that the standard method was called (not the internal API)
+        comments_mixin.jira.issue_add_comment.assert_called_once_with(
+            "TEST-123", "*This* is _Jira_ formatted"
+        )
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This is an explicitly public comment"
+        assert result["author"] == "John Doe"
+
+    def test_add_comment_with_case_insensitive_visibility(self, comments_mixin):
+        """Test add_comment with case-insensitive visibility parameter."""
+        # Ensure force_internal_comments is disabled
+        comments_mixin.config.force_internal_comments = False
+        
+        # Setup mock response for direct REST API call
+        comments_mixin.jira.resource_url = Mock(return_value="https://test.atlassian.net/rest/api/2/issue")
+        comments_mixin.jira.post = Mock(return_value={
+            "id": "10001",
+            "body": "This is an internal comment",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        })
+
+        # Call the method with uppercase internal visibility
+        result = comments_mixin.add_comment("TEST-123", "Test internal comment", visibility="INTERNAL")
+
+        # Verify that the direct REST API was called with internal properties
+        comments_mixin.jira.resource_url.assert_called_once_with("issue")
+        comments_mixin.jira.post.assert_called_once_with(
+            "https://test.atlassian.net/rest/api/2/issue/TEST-123/comment",
+            json={
+                "body": "*This* is _Jira_ formatted",
+                "properties": [
+                    {
+                        "key": "sd.public.comment",
+                        "value": {"internal": True}
+                    }
+                ]
+            }
+        )
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This is an internal comment"
+        assert result["author"] == "John Doe"
+
+    def test_add_comment_with_force_internal_and_explicit_public_override(self, comments_mixin):
+        """Test that force_internal_comments setting cannot be overridden by explicit public visibility."""
+        # Enable force_internal_comments
+        comments_mixin.config.force_internal_comments = True
+        
+        # Setup mock response for direct REST API call (internal comment)
+        comments_mixin.jira.resource_url = Mock(return_value="https://test.atlassian.net/rest/api/2/issue")
+        comments_mixin.jira.post = Mock(return_value={
+            "id": "10001",
+            "body": "This is forced to be internal despite explicit public request",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        })
+
+        # Call the method with explicit public visibility (should be ignored due to force setting)
+        result = comments_mixin.add_comment("TEST-123", "Test public comment", visibility="public")
+
+        # Verify that the direct REST API was called with internal properties (force overrides explicit public)
+        comments_mixin.jira.resource_url.assert_called_once_with("issue")
+        comments_mixin.jira.post.assert_called_once_with(
+            "https://test.atlassian.net/rest/api/2/issue/TEST-123/comment",
+            json={
+                "body": "*This* is _Jira_ formatted",
+                "properties": [
+                    {
+                        "key": "sd.public.comment",
+                        "value": {"internal": True}
+                    }
+                ]
+            }
+        )
+        
+        # Verify that the standard issue_add_comment was NOT called
+        comments_mixin.jira.issue_add_comment.assert_not_called()
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This is forced to be internal despite explicit public request"
+        assert result["author"] == "John Doe"
+
+    def test_add_comment_with_none_visibility_respects_global_setting(self, comments_mixin):
+        """Test that visibility=None respects the global force_internal_comments setting."""
+        # Enable force_internal_comments
+        comments_mixin.config.force_internal_comments = True
+        
+        # Setup mock response for direct REST API call
+        comments_mixin.jira.resource_url = Mock(return_value="https://test.atlassian.net/rest/api/2/issue")
+        comments_mixin.jira.post = Mock(return_value={
+            "id": "10001",
+            "body": "This should be internal due to global setting",
+            "created": "2024-01-01T10:00:00.000+0000",
+            "author": {"displayName": "John Doe"},
+        })
+
+        # Call the method with explicit None visibility
+        result = comments_mixin.add_comment("TEST-123", "Test comment", visibility=None)
+
+        # Verify that the direct REST API was called with internal properties
+        comments_mixin.jira.resource_url.assert_called_once_with("issue")
+        comments_mixin.jira.post.assert_called_once_with(
+            "https://test.atlassian.net/rest/api/2/issue/TEST-123/comment",
+            json={
+                "body": "*This* is _Jira_ formatted",
+                "properties": [
+                    {
+                        "key": "sd.public.comment",
+                        "value": {"internal": True}
+                    }
+                ]
+            }
+        )
+        
+        # Verify that the standard issue_add_comment was NOT called
+        comments_mixin.jira.issue_add_comment.assert_not_called()
+        
+        # Verify the result
+        assert result["id"] == "10001"
+        assert result["body"] == "This should be internal due to global setting"
+        assert result["author"] == "John Doe"

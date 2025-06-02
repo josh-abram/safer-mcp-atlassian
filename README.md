@@ -8,6 +8,9 @@
 
 Model Context Protocol (MCP) server for Atlassian products (Confluence and Jira). This integration supports both Confluence & Jira Cloud and Server/Data Center deployments.
 
+> [!NOTE]
+> **safer-mcp-atlassian Fork**: This repository is a fork of the original mcp-atlassian project, enhanced with additional safety controls for production use. The goal is to provide a more secure and controlled alternative to the original MCP server, with features like forced internal comments and enhanced access controls to prevent accidental public exposure of sensitive information.
+
 ## Example Usage
 
 Ask your AI assistant to:
@@ -35,6 +38,20 @@ https://github.com/user-attachments/assets/7fe9c488-ad0c-4876-9b54-120b666bb785
 | **Confluence** | Server/Data Center | ✅ Supported (version 6.0+)  |
 | **Jira**       | Cloud              | ✅ Fully supported           |
 | **Jira**       | Server/Data Center | ✅ Supported (version 8.14+) |
+
+## Safety Enhancements
+
+This fork includes additional safety controls designed for production environments:
+
+### 🔒 Enhanced Comment Security
+- **Forced Internal Comments**: Use `JIRA_FORCE_INTERNAL_COMMENTS=true` to ensure all comments are created as internal/private, preventing accidental public exposure of sensitive information
+- **Visibility Override Protection**: When force internal comments is enabled, it overrides any explicit public visibility requests
+- **Granular Control**: Individual comment visibility can still be controlled when force mode is disabled
+
+### 🛡️ Additional Safety Features
+- **Read-Only Mode**: Comprehensive write operation blocking with `READ_ONLY_MODE=true`
+- **Tool Filtering**: Restrict available tools using `ENABLED_TOOLS` environment variable
+- **Enhanced Logging**: Better audit trails for security monitoring
 
 ## Quick Start Guide
 
@@ -115,6 +132,7 @@ There are two main approaches to configure the Docker container:
 >
 > - `CONFLUENCE_SPACES_FILTER`: Filter by space keys (e.g., "DEV,TEAM,DOC")
 > - `JIRA_PROJECTS_FILTER`: Filter by project keys (e.g., "PROJ,DEV,SUPPORT")
+> - `JIRA_FORCE_INTERNAL_COMMENTS`: Set to "true" to force all Jira comments to be internal/private (overrides explicit visibility settings)
 > - `READ_ONLY_MODE`: Set to "true" to disable write operations
 > - `MCP_VERBOSE`: Set to "true" for more detailed logging
 > - `ENABLED_TOOLS`: Comma-separated list of tool names to enable (e.g., "confluence_search,jira_get_issue")
@@ -550,6 +568,23 @@ Here's a complete example of setting up multi-user authentication with streamabl
 - `jira_update_issue`: Update an existing issue
 - `jira_transition_issue`: Transition an issue to a new status
 - `jira_add_comment`: Add a comment to an issue
+
+##### Comment Visibility Control
+
+The `jira_add_comment` tool supports controlling comment visibility with enhanced safety features:
+
+- **Visibility Parameter**: Specify `visibility="public"` or `visibility="internal"` when adding comments
+- **Force Internal Comments**: Set `JIRA_FORCE_INTERNAL_COMMENTS=true` to ensure ALL comments are internal, regardless of explicit visibility settings
+- **Safety First**: When force internal comments is enabled, it overrides any explicit public visibility requests to prevent accidental exposure of sensitive information
+
+**Examples:**
+```bash
+# Normal usage - respects visibility parameter
+jira_add_comment(issue_key="PROJ-123", comment="Public comment", visibility="public")
+
+# With JIRA_FORCE_INTERNAL_COMMENTS=true - forces internal regardless of visibility parameter
+jira_add_comment(issue_key="PROJ-123", comment="Forced internal", visibility="public")  # Still becomes internal
+```
 
 #### Confluence Tools
 

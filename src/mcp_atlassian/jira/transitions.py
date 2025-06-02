@@ -230,7 +230,7 @@ class TransitionsMixin(JiraClient, IssueOperationsProto, UsersOperationsProto):
                     if payload:
                         base_url = self.jira.resource_url("issue")
                         url = f"{base_url}/{issue_key}"
-                        self.jira.put(url, data=payload)
+                        self.jira.put(url, json=payload)
 
             # Return the updated issue
             return self.get_issue(issue_key)
@@ -410,7 +410,19 @@ class TransitionsMixin(JiraClient, IssueOperationsProto, UsersOperationsProto):
         if hasattr(self, "_markdown_to_jira"):
             jira_formatted_comment = self._markdown_to_jira(comment_str)
 
+        # Create the comment object
+        comment_obj = {"body": jira_formatted_comment}
+
+        # Add internal comment properties if force_internal_comments is enabled
+        if self.config.force_internal_comments:
+            comment_obj["properties"] = [
+                {
+                    "key": "sd.public.comment",
+                    "value": {"internal": True}
+                }
+            ]
+
         # Add to transition data
         transition_data["update"] = {
-            "comment": [{"add": {"body": jira_formatted_comment}}]
+            "comment": [{"add": comment_obj}]
         }

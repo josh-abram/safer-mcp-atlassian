@@ -52,13 +52,14 @@ class CommentsMixin(JiraClient):
             logger.error(f"Error getting comments for issue {issue_key}: {str(e)}")
             raise Exception(f"Error getting comments: {str(e)}") from e
 
-    def add_comment(self, issue_key: str, comment: str) -> dict[str, Any]:
+    def add_comment(self, issue_key: str, comment: str, visibility: str | None = None) -> dict[str, Any]:
         """
         Add a comment to an issue.
 
         Args:
             issue_key: The issue key (e.g. 'PROJ-123')
             comment: Comment text to add (in Markdown format)
+            visibility: Comment visibility ('public' or 'internal'). If None, uses global force_internal_comments setting.
 
         Returns:
             The created comment details
@@ -70,9 +71,44 @@ class CommentsMixin(JiraClient):
             # Convert Markdown to Jira's markup format
             jira_formatted_comment = self._markdown_to_jira(comment)
 
-            result = self.jira.issue_add_comment(issue_key, jira_formatted_comment)
+            # Determine if comment should be internal
+            # When force_internal_comments is True, ALL comments must be internal
+            if self.config.force_internal_comments:
+                should_be_internal = True
+            elif visibility is None:
+                # No explicit visibility specified and no forcing, default to public
+                should_be_internal = False
+            elif visibility.lower() == "internal":
+                should_be_internal = True
+            elif visibility.lower() == "public":
+                should_be_internal = False
+            else:
+                # Invalid visibility value, default to internal
+                should_be_internal = True
+
+            # Check if we need to make internal comments
+            if should_be_internal:
+                # Use REST API directly to add properties for internal comments
+                comment_data = {
+                    "body": jira_formatted_comment,
+                    "properties": [
+                        {
+                            "key": "sd.public.comment",
+                            "value": {"internal": True}
+                        }
+                    ]
+                }
+                
+                # Make direct REST API call
+                base_url = self.jira.resource_url("issue")
+                url = f"{base_url}/{issue_key}/comment"
+                result = self.jira.post(url, json=comment_data)
+            else:
+                # Use the standard method for public comments
+                result = self.jira.issue_add_comment(issue_key, jira_formatted_comment)
+
             if not isinstance(result, dict):
-                msg = f"Unexpected return value type from `jira.issue_add_comment`: {type(result)}"
+                msg = f"Unexpected return value type from comment API: {type(result)}"
                 logger.error(msg)
                 raise TypeError(msg)
 
