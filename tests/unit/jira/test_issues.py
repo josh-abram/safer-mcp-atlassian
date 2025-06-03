@@ -690,26 +690,6 @@ class TestIssuesMixin:
         # Call the method with status in kwargs instead of fields
         issues_mixin.update_issue(issue_key="TEST-123", status="In Progress")
 
-    def test_delete_issue(self, issues_mixin: IssuesMixin):
-        """Test deleting an issue."""
-        # Call the method
-        result = issues_mixin.delete_issue("TEST-123")
-
-        # Verify the API call
-        issues_mixin.jira.delete_issue.assert_called_once_with("TEST-123")
-        assert result is True
-
-    def test_delete_issue_error(self, issues_mixin: IssuesMixin):
-        """Test error handling when deleting an issue."""
-        # Setup mock to throw exception
-        issues_mixin.jira.delete_issue.side_effect = Exception("Delete failed")
-
-        # Call the method and verify exception is raised correctly
-        with pytest.raises(
-            Exception, match="Error deleting issue TEST-123: Delete failed"
-        ):
-            issues_mixin.delete_issue("TEST-123")
-
     def test_process_additional_fields_with_fixversions(
         self, issues_mixin: IssuesMixin
     ):

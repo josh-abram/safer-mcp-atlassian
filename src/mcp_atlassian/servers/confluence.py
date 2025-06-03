@@ -517,48 +517,6 @@ async def update_page(
 
 @confluence_mcp.tool(tags={"confluence", "write"})
 @check_write_access
-async def delete_page(
-    ctx: Context,
-    page_id: Annotated[str, Field(description="The ID of the page to delete")],
-) -> str:
-    """Delete an existing Confluence page.
-
-    Args:
-        ctx: The FastMCP context.
-        page_id: The ID of the page to delete.
-
-    Returns:
-        JSON string indicating success or failure.
-
-    Raises:
-        ValueError: If Confluence client is not configured or available.
-    """
-    confluence_fetcher = await get_confluence_fetcher(ctx)
-    try:
-        result = confluence_fetcher.delete_page(page_id=page_id)
-        if result:
-            response = {
-                "success": True,
-                "message": f"Page {page_id} deleted successfully",
-            }
-        else:
-            response = {
-                "success": False,
-                "message": f"Unable to delete page {page_id}. API request completed but deletion unsuccessful.",
-            }
-    except Exception as e:
-        logger.error(f"Error deleting Confluence page {page_id}: {str(e)}")
-        response = {
-            "success": False,
-            "message": f"Error deleting page {page_id}",
-            "error": str(e),
-        }
-
-    return json.dumps(response, indent=2, ensure_ascii=False)
-
-
-@confluence_mcp.tool(tags={"confluence", "write"})
-@check_write_access
 async def add_comment(
     ctx: Context,
     page_id: Annotated[

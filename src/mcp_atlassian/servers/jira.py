@@ -965,31 +965,6 @@ async def update_issue(
 
 @jira_mcp.tool(tags={"jira", "write"})
 @check_write_access
-async def delete_issue(
-    ctx: Context,
-    issue_key: Annotated[str, Field(description="Jira issue key (e.g. PROJ-123)")],
-) -> str:
-    """Delete an existing Jira issue.
-
-    Args:
-        ctx: The FastMCP context.
-        issue_key: Jira issue key.
-
-    Returns:
-        JSON string indicating success.
-
-    Raises:
-        ValueError: If in read-only mode or Jira client unavailable.
-    """
-    jira = await get_jira_fetcher(ctx)
-    deleted = jira.delete_issue(issue_key)
-    result = {"message": f"Issue {issue_key} has been deleted successfully."}
-    # The underlying method raises on failure, so if we reach here, it's success.
-    return json.dumps(result, indent=2, ensure_ascii=False)
-
-
-@jira_mcp.tool(tags={"jira", "write"})
-@check_write_access
 async def add_comment(
     ctx: Context,
     issue_key: Annotated[str, Field(description="Jira issue key (e.g., 'PROJ-123')")],
@@ -1023,73 +998,6 @@ async def add_comment(
 
 
 @convert_empty_defaults_to_none
-@jira_mcp.tool(tags={"jira", "write"})
-@check_write_access
-async def add_worklog(
-    ctx: Context,
-    issue_key: Annotated[str, Field(description="Jira issue key (e.g., 'PROJ-123')")],
-    time_spent: Annotated[
-        str,
-        Field(
-            description=(
-                "Time spent in Jira format. Examples: "
-                "'1h 30m' (1 hour and 30 minutes), '1d' (1 day), '30m' (30 minutes), '4h' (4 hours)"
-            )
-        ),
-    ],
-    comment: Annotated[
-        str,
-        Field(description="(Optional) Comment for the worklog in Markdown format"),
-    ] = "",
-    started: Annotated[
-        str,
-        Field(
-            description=(
-                "(Optional) Start time in ISO format. If not provided, the current time will be used. "
-                "Example: '2023-08-01T12:00:00.000+0000'"
-            )
-        ),
-    ] = "",
-    # Add original_estimate and remaining_estimate as per original tool
-    original_estimate: Annotated[
-        str, Field(description="(Optional) New value for the original estimate")
-    ] = "",
-    remaining_estimate: Annotated[
-        str, Field(description="(Optional) New value for the remaining estimate")
-    ] = "",
-) -> str:
-    """Add a worklog entry to a Jira issue.
-
-    Args:
-        ctx: The FastMCP context.
-        issue_key: Jira issue key.
-        time_spent: Time spent in Jira format.
-        comment: Optional comment in Markdown.
-        started: Optional start time in ISO format.
-        original_estimate: Optional new original estimate.
-        remaining_estimate: Optional new remaining estimate.
-
-
-    Returns:
-        JSON string representing the added worklog object.
-
-    Raises:
-        ValueError: If in read-only mode or Jira client unavailable.
-    """
-    jira = await get_jira_fetcher(ctx)
-    # add_worklog returns dict
-    worklog_result = jira.add_worklog(
-        issue_key=issue_key,
-        time_spent=time_spent,
-        comment=comment,
-        started=started,
-        original_estimate=original_estimate,
-        remaining_estimate=remaining_estimate,
-    )
-    result = {"message": "Worklog added successfully", "worklog": worklog_result}
-    return json.dumps(result, indent=2, ensure_ascii=False)
-
-
 @jira_mcp.tool(tags={"jira", "write"})
 @check_write_access
 async def link_to_epic(
