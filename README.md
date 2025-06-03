@@ -614,11 +614,9 @@ jira_add_comment(issue_key="PROJ-123", comment="Forced internal", visibility="pu
 |           | `jira_get_project_versions`   |                                |
 | **Write** | `jira_create_issue`           | `confluence_create_page`       |
 |           | `jira_update_issue`           | `confluence_update_page`       |
-|           | `jira_delete_issue`           | `confluence_delete_page`       |
 |           | `jira_batch_create_issues`    | `confluence_add_label`         |
 |           | `jira_add_comment`            | `confluence_add_comment`       |
 |           | `jira_transition_issue`       |                                |
-|           | `jira_add_worklog`            |                                |
 |           | `jira_link_to_epic`           |                                |
 |           | `jira_create_sprint`          |                                |
 |           | `jira_update_sprint`          |                                |

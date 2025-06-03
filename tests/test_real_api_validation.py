@@ -86,13 +86,6 @@ class ResourceTracker:
                 except Exception as e:
                     print(f"Failed to delete Jira comment {comment_id}: {e}")
 
-            for issue_key in self.jira_issues:
-                try:
-                    jira_client.delete_issue(issue_key)
-                    print(f"Deleted Jira issue {issue_key}")
-                except Exception as e:
-                    print(f"Failed to delete Jira issue {issue_key}: {e}")
-
         if confluence_client:
             for comment_id in self.confluence_comments:
                 try:
@@ -100,13 +93,6 @@ class ResourceTracker:
                     print(f"Deleted Confluence comment {comment_id}")
                 except Exception as e:
                     print(f"Failed to delete Confluence comment {comment_id}: {e}")
-
-            for page_id in self.confluence_pages:
-                try:
-                    confluence_client.delete_page(page_id)
-                    print(f"Deleted Confluence page {page_id}")
-                except Exception as e:
-                    print(f"Failed to delete Confluence page {page_id}: {e}")
 
 
 @pytest.fixture
@@ -1341,12 +1327,9 @@ class TestRealToolValidation:
                 assert remove_result["link_id"] == link_id
 
         finally:
-            await call_tool(
-                api_validation_client, "jira/delete_issue", {"issue_key": issue1_key}
-            )
-            await call_tool(
-                api_validation_client, "jira/delete_issue", {"issue_key": issue2_key}
-            )
+            # Note: Manual cleanup of created test issues may be needed
+            # as the delete_issue tool has been removed from the codebase
+            pass
 
 
 @pytest.mark.anyio

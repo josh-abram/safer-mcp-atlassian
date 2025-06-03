@@ -46,7 +46,6 @@ def mock_confluence_fetcher():
     mock_fetcher.get_page_children.return_value = [mock_page]
     mock_fetcher.create_page.return_value = mock_page
     mock_fetcher.update_page.return_value = mock_page
-    mock_fetcher.delete_page.return_value = True
 
     # Mock comment
     mock_comment = MagicMock()
@@ -103,7 +102,6 @@ def test_confluence_mcp(mock_confluence_fetcher, mock_base_confluence_config):
         add_comment,
         add_label,
         create_page,
-        delete_page,
         get_comments,
         get_labels,
         get_page,
@@ -138,7 +136,6 @@ def test_confluence_mcp(mock_confluence_fetcher, mock_base_confluence_config):
     confluence_sub_mcp.tool()(add_label)
     confluence_sub_mcp.tool()(create_page)
     confluence_sub_mcp.tool()(update_page)
-    confluence_sub_mcp.tool()(delete_page)
 
     test_mcp.mount("confluence", confluence_sub_mcp)
 
@@ -154,7 +151,6 @@ def no_fetcher_test_confluence_mcp(mock_base_confluence_config):
         add_comment,
         add_label,
         create_page,
-        delete_page,
         get_comments,
         get_labels,
         get_page,
@@ -191,7 +187,6 @@ def no_fetcher_test_confluence_mcp(mock_base_confluence_config):
     confluence_sub_mcp.tool()(add_label)
     confluence_sub_mcp.tool()(create_page)
     confluence_sub_mcp.tool()(update_page)
-    confluence_sub_mcp.tool()(delete_page)
 
     test_mcp.mount("confluence", confluence_sub_mcp)
 
@@ -447,15 +442,6 @@ async def test_update_page(client, mock_confluence_fetcher):
 
 
 @pytest.mark.anyio
-async def test_delete_page(client, mock_confluence_fetcher):
-    """Test deleting a page."""
-    response = await client.call_tool("confluence_delete_page", {"page_id": "123456"})
-    mock_confluence_fetcher.delete_page.assert_called_once_with(page_id="123456")
-    result_data = json.loads(response[0].text)
-    assert result_data["success"] is True
-
-
-@pytest.mark.anyio
 async def test_no_fetcher_update_page(no_fetcher_client_fixture, mock_request):
     """Test that page update fails when Confluence client is not configured."""
 
@@ -482,30 +468,6 @@ async def test_no_fetcher_update_page(no_fetcher_client_fixture, mock_request):
                 },
             )
     assert "Error calling tool 'update_page'" in str(excinfo.value)
-
-
-@pytest.mark.anyio
-async def test_no_fetcher_delete_page(no_fetcher_client_fixture, mock_request):
-    """Test that page deletion fails when Confluence client is not configured."""
-
-    async def mock_get_fetcher_error(*args, **kwargs):
-        raise ValueError("Mocked: Confluence client is not configured or available")
-
-    with (
-        patch(
-            "src.mcp_atlassian.servers.confluence.get_confluence_fetcher",
-            AsyncMock(side_effect=mock_get_fetcher_error),
-        ),
-        patch(
-            "src.mcp_atlassian.servers.dependencies.get_http_request",
-            return_value=mock_request,
-        ),
-    ):
-        with pytest.raises(ToolError) as excinfo:
-            await no_fetcher_client_fixture.call_tool(
-                "confluence_delete_page", {"page_id": "123456"}
-            )
-    assert "Error calling tool 'delete_page'" in str(excinfo.value)
 
 
 @pytest.mark.anyio

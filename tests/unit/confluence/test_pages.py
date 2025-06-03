@@ -369,29 +369,6 @@ class TestPagesMixin:
         with pytest.raises(Exception, match="Failed to update page"):
             pages_mixin.update_page("987654321", "Test Page", "<p>Content</p>")
 
-    def test_delete_page_success(self, pages_mixin):
-        """Test successfully deleting a page."""
-        # Arrange
-        page_id = "987654321"
-        pages_mixin.confluence.remove_page.return_value = True
-
-        # Act
-        result = pages_mixin.delete_page(page_id)
-
-        # Assert
-        pages_mixin.confluence.remove_page.assert_called_once_with(page_id=page_id)
-        assert result is True
-
-    def test_delete_page_error(self, pages_mixin):
-        """Test error handling when deleting a page."""
-        # Arrange
-        page_id = "987654321"
-        pages_mixin.confluence.remove_page.side_effect = Exception("API Error")
-
-        # Act/Assert
-        with pytest.raises(Exception, match="Failed to delete page"):
-            pages_mixin.delete_page(page_id)
-
     def test_get_page_children_success(self, pages_mixin):
         """Test successfully getting child pages."""
         # Arrange
