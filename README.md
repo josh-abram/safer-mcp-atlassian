@@ -588,6 +588,23 @@ jira_add_comment(issue_key="PROJ-123", comment="Public comment", visibility="pub
 jira_add_comment(issue_key="PROJ-123", comment="Forced internal", visibility="public")  # Still becomes internal
 ```
 
+##### Comment Visibility Control
+
+The `jira_add_comment` tool supports controlling comment visibility with enhanced safety features:
+
+- **Visibility Parameter**: Specify `visibility="public"` or `visibility="internal"` when adding comments
+- **Force Internal Comments**: Set `JIRA_FORCE_INTERNAL_COMMENTS=true` to ensure ALL comments are internal, regardless of explicit visibility settings
+- **Safety First**: When force internal comments is enabled, it overrides any explicit public visibility requests to prevent accidental exposure of sensitive information
+
+**Examples:**
+```bash
+# Normal usage - respects visibility parameter
+jira_add_comment(issue_key="PROJ-123", comment="Public comment", visibility="public")
+
+# With JIRA_FORCE_INTERNAL_COMMENTS=true - forces internal regardless of visibility parameter
+jira_add_comment(issue_key="PROJ-123", comment="Forced internal", visibility="public")  # Still becomes internal
+```
+
 #### Confluence Tools
 
 - `confluence_search`: Search Confluence content using CQL
